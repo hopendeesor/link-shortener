@@ -1,0 +1,32 @@
+name: link-shortener
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+
+  deploy-staging:
+    needs: test
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/heads/')
+    steps:
+      - run: curl -X POST ${{ secrets.RENDER_STAGING_DEPLOY_HOOK }}
+
+  deploy-production:
+    needs: test
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - run: curl -X POST ${{ secrets.RENDER_PRODUCTION_DEPLOY_HOOK }}
